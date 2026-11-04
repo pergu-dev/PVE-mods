@@ -28,8 +28,17 @@ our @EXPORT_OK = qw(
 
 sub _run_command {
     my (@command) = @_;
+
+    # Collector processes inherit the worker's SIGCHLD handler. Restore
+    # default child handling locally so close() can reap this command and
+    # report its actual exit status.
+    local $SIG{CHLD} = 'DEFAULT';
+
     my $pid = open(my $fh, '-|');
-    return { output => '', exit_status => 255 } unless defined $pid;
+    return {
+        output      => '',
+        exit_status => 255,
+    } unless defined $pid;
 
     if ($pid == 0) {
         open STDERR, '>', '/dev/null';
@@ -39,11 +48,23 @@ sub _run_command {
 
     local $/;
     my $output = <$fh> // '';
+
     close $fh;
+    my $status = $?;
+
+    my $exit_status;
+
+    if ($status == -1) {
+        $exit_status = 255;
+    } elsif ($status & 127) {
+        $exit_status = 128 + ($status & 127);
+    } else {
+        $exit_status = $status >> 8;
+    }
 
     return {
         output      => $output,
-        exit_status => $? >> 8,
+        exit_status => $exit_status,
     };
 }
 

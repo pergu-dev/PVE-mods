@@ -241,6 +241,22 @@ sub get_storage_health {
 
     pve_mods_starter();
 
+    # The worker starts collectors asynchronously. On the first request,
+    # allow the storage-health collector a short period to create its state
+    # file instead of returning an empty object immediately.
+    unless (-f $storage_health_state_file) {
+        for (1 .. 20) {
+            select(
+                undef,
+                undef,
+                undef,
+                0.1,
+            );
+
+            last if -f $storage_health_state_file;
+        }
+    }
+
     my $data = _read_state_file_cached(
         $storage_health_state_file,
         $storage_health_cache,
