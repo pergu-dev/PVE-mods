@@ -14,3 +14,10 @@
 /.vs/PVE-mods/FileContentIndex/aecfa7d2-4343-412e-a663-cd485991e27d.vsidx
 /.vs/PVE-mods/FileContentIndex/da25d4cb-f11b-4cdb-b231-55efa7695267.vsidx
 /.vs/PVE-mods/FileContentIndex
+
+# Local storage-health probe output
+storage-health-probe-*/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
