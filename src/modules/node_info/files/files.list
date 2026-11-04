@@ -14,6 +14,7 @@ Config.pm                               usr/share/perl5/PVE/PVEMods/Config.pm
 Utils.pm                                usr/share/perl5/PVE/PVEMods/Utils.pm
 Store.pm                                usr/share/perl5/PVE/PVEMods/Store.pm
 ProcessManager.pm                       usr/share/perl5/PVE/PVEMods/ProcessManager.pm
+StorageHealth/Parser.pm                 usr/share/perl5/PVE/PVEMods/StorageHealth/Parser.pm
 
 # Collector plugins
 Collector/Intel.pm                      usr/share/perl5/PVE/PVEMods/Collector/Intel.pm
