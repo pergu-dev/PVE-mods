@@ -1,0 +1,34 @@
+{
+  "device": {
+    "name": "/dev/fixture-sas-01",
+    "type": "scsi",
+    "protocol": "SCSI"
+  },
+  "model_name": "ST4000NM0023",
+  "serial_number": "SERIAL_SAS_01",
+  "logical_unit_id": "WWN_SAS_01",
+  "smart_status": {
+    "passed": true
+  },
+  "scsi_grown_defect_list": 259,
+  "scsi_error_counter_log": {
+    "read": {
+      "correction_algorithm_invocations": 9,
+      "errors_corrected_by_eccdelayed": 0,
+      "errors_corrected_by_eccfast": 1372774978,
+      "errors_corrected_by_rereads_rewrites": 0,
+      "gigabytes_processed": "561.103",
+      "total_errors_corrected": 1372774978,
+      "total_uncorrected_errors": 9
+    },
+    "write": {
+      "correction_algorithm_invocations": 0,
+      "errors_corrected_by_eccdelayed": 0,
+      "errors_corrected_by_eccfast": 0,
+      "errors_corrected_by_rereads_rewrites": 0,
+      "gigabytes_processed": "2006.355",
+      "total_errors_corrected": 0,
+      "total_uncorrected_errors": 0
+    }
+  }
+}
