@@ -34,20 +34,60 @@ list_modules() {
 }
 
 # check_perl_syntax <mod>: run perl -c on every .pm under <mod>/files/
+#
+# If the module has a files.list manifest, construct a temporary Perl library
+# using its installation destinations. This makes source-tree imports resolve
+# to the current source files instead of older modules under /usr/share/perl5.
 check_perl_syntax() {
     local mod="$1"
     local files_dir="$SRC_DIR/$mod/files"
     [[ -d "$files_dir" ]] || return 0
 
+    local manifest="$files_dir/files.list"
+    local temp_lib=""
     local ok=0 f output
+
+    if [[ -f "$manifest" ]]; then
+        temp_lib="$(mktemp -d)"
+
+        while read -r source destination _mode; do
+            [[ -n "${source:-}" ]] || continue
+            [[ "$source" == \#* ]] && continue
+            [[ "$source" == *.pm ]] || continue
+            [[ "$destination" == usr/share/perl5/* ]] || continue
+
+            local source_path="$files_dir/$source"
+            local relative_destination="${destination#usr/share/perl5/}"
+            local target_path="$temp_lib/$relative_destination"
+
+            [[ -f "$source_path" ]] || continue
+
+            mkdir -p "$(dirname "$target_path")"
+            ln -s "$source_path" "$target_path"
+        done < "$manifest"
+    fi
+
     while IFS= read -r f; do
-        output="$(perl -c "$f" 2>&1)"
+        if [[ -n "$temp_lib" ]]; then
+            output="$(
+                PERL5LIB="$temp_lib${PERL5LIB:+:$PERL5LIB}"                     perl -c "$f" 2>&1
+            )"
+        else
+            output="$(perl -c "$f" 2>&1)"
+        fi
+
         if [[ $? -ne 0 ]]; then
             warn "perl -c FAILED: $f"
             echo "$output"
             ok=1
         fi
-    done < <(find "$files_dir" -name "*.pm" -type f | sort)
+    done < <(
+        find "$files_dir"           -name "*.pm"           -type f |
+        sort
+    )
+
+    [[ -n "$temp_lib" ]] && rm -rf "$temp_lib"
+
     return $ok
 }
 

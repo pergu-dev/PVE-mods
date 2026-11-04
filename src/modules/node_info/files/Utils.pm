@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(
     startup_message
     setup_collector_signals
     safe_write_json
+    safe_write_json_atomic
     safe_read_json
     parse_csv_line
 );
@@ -260,6 +261,62 @@ sub safe_write_json {
         debug(__LINE__, "Error writing to $filepath: $@");
         return 0;
     }
+    return 1;
+}
+
+sub safe_write_json_atomic {
+    my ($filepath, $data, $pretty) = @_;
+    $pretty //= 1;
+
+    ($filepath) = (
+        $filepath =~ /^([a-zA-Z0-9_\/\-\.]+)$/
+    ) or do {
+        debug(
+            __LINE__,
+            "Unsafe filepath rejected: $filepath",
+        );
+        return 0;
+    };
+
+    my $temporary = "$filepath.tmp.$$";
+
+    eval {
+        open my $fh, '>', $temporary
+            or die "Failed to open $temporary: $!";
+
+        my $json = $pretty
+            ? JSON->new->pretty->canonical->encode($data)
+            : encode_json($data);
+
+        print $fh $json
+            or die "Failed to write $temporary: $!";
+
+        close $fh
+            or die "Failed to close $temporary: $!";
+
+        rename($temporary, $filepath)
+            or die (
+                "Failed to rename $temporary "
+                . "to $filepath: $!"
+            );
+
+        debug(
+            __LINE__,
+            "Atomically wrote JSON to $filepath",
+        );
+    };
+
+    if ($@) {
+        my $error = $@;
+        unlink $temporary if -e $temporary;
+        debug(
+            __LINE__,
+            "Atomic JSON write failed for "
+            . "$filepath: $error",
+        );
+        return 0;
+    }
+
     return 1;
 }
 

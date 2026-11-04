@@ -235,6 +235,12 @@ node_info_defaults() {
     ENABLE_INTEL_GPU_INFO=0; ENABLE_NVIDIA_GPU_INFO=0; ENABLE_AMD_GPU_INFO=0
     ENABLE_GPU_HISTORY=0
     ENABLE_UPS=0; UPS_DEVICE_NAME="ups@localhost"
+    ENABLE_STORAGE_HEALTH=0
+    STORAGE_ZFS_INTERVAL=15
+    STORAGE_SMART_INTERVAL=3600
+    STORAGE_SMART_STALE_AFTER=86400
+    STORAGE_WAKE_INITIAL=1
+    STORAGE_WAKE_PERIODIC=0
     ENABLE_SYSTEM_INFO=0; SYSTEM_INFO_TYPE=1; TEMP_UNIT="C"; IGNORE_TEMP_BELOW=5
     DEBUG_LM_SENSORS=0; DEBUG_LM_SENSORS_FILE="/tmp/sensors-output.json"
     DEBUG_INTEL=0;       DEBUG_INTEL_FILE="/tmp/intel-gpu-devices.txt"
@@ -273,6 +279,12 @@ node_info_load_conf() {
             lm_sensors.display_zero_speed_fans) DISPLAY_ZERO_SPEED_FANS="$val" ;;
             ups.enabled)                    ENABLE_UPS="$val" ;;
             ups.device_name)                UPS_DEVICE_NAME="$val" ;;
+            storage_health.enabled)         ENABLE_STORAGE_HEALTH="$val" ;;
+            storage_health.zfs_interval)    STORAGE_ZFS_INTERVAL="$val" ;;
+            storage_health.smart_interval)  STORAGE_SMART_INTERVAL="$val" ;;
+            storage_health.smart_stale_after) STORAGE_SMART_STALE_AFTER="$val" ;;
+            storage_health.wake_for_initial_baseline) STORAGE_WAKE_INITIAL="$val" ;;
+            storage_health.wake_for_periodic_check) STORAGE_WAKE_PERIODIC="$val" ;;
             system_info.enabled)            ENABLE_SYSTEM_INFO="$val" ;;
             system_info.type)               SYSTEM_INFO_TYPE="$val" ;;
             system_info.temp_unit)          TEMP_UNIT="$val" ;;
@@ -306,6 +318,12 @@ node_info_configure() {
     ENABLE_INTEL_GPU_INFO=0; ENABLE_NVIDIA_GPU_INFO=0; ENABLE_AMD_GPU_INFO=0
     ENABLE_GPU_HISTORY=0
     ENABLE_UPS=0; UPS_DEVICE_NAME="ups@localhost"
+    ENABLE_STORAGE_HEALTH=0
+    STORAGE_ZFS_INTERVAL=15
+    STORAGE_SMART_INTERVAL=3600
+    STORAGE_SMART_STALE_AFTER=86400
+    STORAGE_WAKE_INITIAL=1
+    STORAGE_WAKE_PERIODIC=0
     ENABLE_SYSTEM_INFO=0; SYSTEM_INFO_TYPE=1; TEMP_UNIT="C"; IGNORE_TEMP_BELOW=5
 
     local lm_sensors_ok=false
@@ -715,6 +733,14 @@ display_zero_speed_fans=${DISPLAY_ZERO_SPEED_FANS}
 [ups]
 enabled=${ENABLE_UPS}
 device_name=${UPS_DEVICE_NAME}
+
+[storage_health]
+enabled=${ENABLE_STORAGE_HEALTH}
+zfs_interval=${STORAGE_ZFS_INTERVAL}
+smart_interval=${STORAGE_SMART_INTERVAL}
+smart_stale_after=${STORAGE_SMART_STALE_AFTER}
+wake_for_initial_baseline=${STORAGE_WAKE_INITIAL}
+wake_for_periodic_check=${STORAGE_WAKE_PERIODIC}
 
 [system_info]
 enabled=${ENABLE_SYSTEM_INFO}

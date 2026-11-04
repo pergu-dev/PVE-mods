@@ -23,6 +23,9 @@ use PVE::PVEMods::Collector::Nvidia  qw(get_nvidia_gpu_devices  collector_for_nv
 use PVE::PVEMods::Collector::Amd     qw(get_amd_gpu_devices    collector_for_amd_device);
 use PVE::PVEMods::Collector::LmSensors qw(collector_for_temperature_sensors);
 use PVE::PVEMods::Collector::Ups     qw(collector_for_ups);
+use PVE::PVEMods::Collector::StorageHealth qw(
+    collector_for_storage_health
+);
 
 our @EXPORT_OK = qw(
     pve_mods_starter
@@ -255,6 +258,7 @@ sub _pve_mods_keep_alive {
     _initialise_sensors_collector();
     _initialise_graphics_collectors();
     _initialise_ups_collector();
+    _initialise_storage_health_collector();
     debug(__LINE__, "All collectors started by worker");
 
     debug(__LINE__,
@@ -309,6 +313,51 @@ sub _initialise_ups_collector {
     debug(__LINE__, "Starting UPS collector: $config{ups}{device_name}");
     _start_collector('ups', 'ups', \&collector_for_ups,
                      { ups_name => $config{ups}{device_name} });
+}
+
+sub _initialise_storage_health_collector {
+    unless ($config{storage_health}{enabled}) {
+        debug(
+            __LINE__,
+            "Storage health collection disabled, skipping",
+        );
+        return;
+    }
+
+    unless (
+        check_executable(
+            '/usr/sbin/zpool',
+            'OpenZFS',
+            0,
+            undef,
+        )
+        && check_executable(
+            '/usr/sbin/smartctl',
+            'smartmontools',
+            0,
+            undef,
+        )
+    ) {
+        debug(
+            __LINE__,
+            "Storage health tools unavailable, skipping",
+        );
+        return;
+    }
+
+    debug(
+        __LINE__,
+        "Starting storage health collector",
+    );
+
+    _start_collector(
+        'storage-health',
+        'storage-health',
+        \&collector_for_storage_health,
+        {
+            name => 'storage-health',
+        },
+    );
 }
 
 sub _initialise_graphics_collectors {

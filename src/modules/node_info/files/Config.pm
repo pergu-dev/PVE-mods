@@ -8,7 +8,8 @@ our @EXPORT_OK = qw(
     %config
     $DEBUG_ENABLED $VERSION $process_type
     $pve_mods_working_dir $stats_dir $state_file
-    $sensors_state_file $ups_state_file
+    $sensors_state_file $ups_state_file $storage_health_state_file
+    $storage_health_cache_dir $storage_health_smart_cache
     $pve_mods_worker_lock $startup_lock
     $RRD_SOCKET $RRD_BASE
 );
@@ -78,6 +79,14 @@ our %config = (
         enabled     => 0,
         device_name => 'ups@localhost',
     },
+    storage_health => {
+        enabled                   => 0,
+        zfs_interval              => 15,
+        smart_interval            => 3600,
+        smart_stale_after         => 86400,
+        wake_for_initial_baseline => 1,
+        wake_for_periodic_check   => 0,
+    },
     system_info => {
         enabled => 0,
         type    => 1,  # 1 = System (dmidecode -t 1), 2 = Baseboard/Motherboard (dmidecode -t 2)
@@ -98,6 +107,11 @@ our $stats_dir           = $pve_mods_working_dir;
 our $state_file          = "$pve_mods_working_dir/stats.json";
 our $sensors_state_file  = "$pve_mods_working_dir/sensors.json";
 our $ups_state_file      = "$pve_mods_working_dir/ups.json";
+our $storage_health_state_file =
+    "$pve_mods_working_dir/storage-health.json";
+our $storage_health_cache_dir = '/var/lib/pve-mods';
+our $storage_health_smart_cache =
+    "$storage_health_cache_dir/storage-health-smart.json";
 our $pve_mods_worker_lock = "$pve_mods_working_dir/pve_mods_worker.lock";
 our $startup_lock        = "$pve_mods_working_dir/startup.lock";
 
@@ -145,6 +159,12 @@ sub _load_ini_file {
             }
             elsif ($section eq 'ups' && exists $config{ups}{$key}) {
                 $config{ups}{$key} = $val;
+            }
+            elsif (
+                $section eq 'storage_health'
+                && exists $config{storage_health}{$key}
+            ) {
+                $config{storage_health}{$key} = $val;
             }
             elsif ($section eq 'system_info' && exists $config{system_info}{$key}) {
                 $config{system_info}{$key} = $val;
