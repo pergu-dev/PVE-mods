@@ -22,3 +22,6 @@ override_dh_install:
 	# ── Dynamic section ────────────────────────────────────────────────────
 	# `bash build/gen-rules.sh >> debian/rules` appends per-module install lines
 	# here during CI, just before dpkg-buildpackage. Do not commit them.
+
+override_dh_installsystemd:
+	dh_installsystemd --no-enable --no-start

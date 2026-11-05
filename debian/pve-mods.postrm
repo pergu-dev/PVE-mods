@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload || true
+fi
+
 case "$1" in
     remove)
         # Remove apt hook if it was installed via pve-mods-configure.

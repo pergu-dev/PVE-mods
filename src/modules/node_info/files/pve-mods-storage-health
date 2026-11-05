@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use PVE::PVEMods::Config qw(%config);
+use PVE::PVEMods::Collector::StorageHealth qw(collect_storage_health_once);
+
+exit 0 unless $config{storage_health}{enabled};
+
+my $state = collect_storage_health_once();
+
+if (ref($state) eq 'HASH') {
+    exit 0;
+}
+
+exit 1;

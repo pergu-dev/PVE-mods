@@ -108,7 +108,7 @@ our $state_file          = "$pve_mods_working_dir/stats.json";
 our $sensors_state_file  = "$pve_mods_working_dir/sensors.json";
 our $ups_state_file      = "$pve_mods_working_dir/ups.json";
 our $storage_health_state_file =
-    "$pve_mods_working_dir/storage-health.json";
+    '/run/pve-mods/storage-health.json';
 our $storage_health_cache_dir = '/var/lib/pve-mods';
 our $storage_health_smart_cache =
     "$storage_health_cache_dir/storage-health-smart.json";

@@ -27,3 +27,8 @@ Collector/systemInformation.pm          usr/share/perl5/PVE/PVEMods/Collector/Sy
 
 # JS module (rename to match loader reference)
 PveMods_pvemanagerlib.js                 usr/share/pve-manager/js/PveMods_PveNodeStatusView.js
+
+# Privileged Storage Health service
+pve-mods-storage-health                    usr/lib/pve-mods/pve-mods-storage-health 755
+pve-mods-storage-health.service            lib/systemd/system/pve-mods-storage-health.service 644
+pve-mods-storage-health.timer              lib/systemd/system/pve-mods-storage-health.timer 644

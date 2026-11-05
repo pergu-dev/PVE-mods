@@ -9,6 +9,16 @@ _revert_patches() {
 
 case "$1" in
     remove|deconfigure)
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl disable --now \
+                pve-mods-storage-health.timer \
+                2>/dev/null || true
+
+            systemctl stop \
+                pve-mods-storage-health.service \
+                2>/dev/null || true
+        fi
+
         # 1. Revert patches before files are removed.
         _revert_patches
 

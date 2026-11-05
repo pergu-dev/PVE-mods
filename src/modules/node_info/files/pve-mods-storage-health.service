@@ -1,0 +1,35 @@
+[Unit]
+Description=PVE Mods storage health collector
+After=local-fs.target
+ConditionPathExists=/usr/sbin/smartctl
+ConditionPathExists=/usr/sbin/zpool
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0027
+ExecStart=/usr/lib/pve-mods/pve-mods-storage-health
+RuntimeDirectory=pve-mods
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+StateDirectory=pve-mods
+StateDirectoryMode=0755
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+PrivateTmp=true
+PrivateNetwork=true
+RestrictAddressFamilies=AF_UNIX
+NoNewPrivileges=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+ReadWritePaths=/run/pve-mods /var/lib/pve-mods

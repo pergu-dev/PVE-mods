@@ -231,7 +231,16 @@ sub collect_storage_health_once {
     my $aggregate = aggregate_health($zfs, @$smart_results);
 
     $cache->{updated_at} = $now;
-    safe_write_json_atomic($storage_health_smart_cache, $cache, 1);
+
+    if (
+        safe_write_json_atomic(
+            $storage_health_smart_cache,
+            $cache,
+            1,
+        )
+    ) {
+        chmod 0600, $storage_health_smart_cache;
+    }
 
     my $state = {
         generated_at => $now,
@@ -243,7 +252,21 @@ sub collect_storage_health_once {
         drives       => $drives,
     };
 
-    safe_write_json_atomic($storage_health_state_file, $state, 1);
+    if (
+        safe_write_json_atomic(
+            $storage_health_state_file,
+            $state,
+            1,
+        )
+    ) {
+        my $www_data_gid = getgrnam('www-data');
+
+        chmod 0640, $storage_health_state_file;
+
+        chown 0, $www_data_gid, $storage_health_state_file
+            if defined $www_data_gid;
+    }
+
     return $state;
 }
 

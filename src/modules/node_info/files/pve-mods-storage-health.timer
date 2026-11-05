@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh PVE Mods storage health
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=15
+AccuracySec=2
+Unit=pve-mods-storage-health.service
+
+[Install]
+WantedBy=timers.target

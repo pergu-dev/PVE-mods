@@ -4,6 +4,40 @@ set -e
 DEFAULT_DIR="/usr/share/pve-mods"
 CONF_DIR="/etc/pve-mods"
 
+_sync_storage_health_timer() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+
+    systemctl daemon-reload || true
+
+    local enabled=0
+    local conf="${CONF_DIR}/conf.d/node_info.conf"
+
+    if [ -f "$conf" ]; then
+        enabled=$(
+            awk -F= '
+                /^\[/ {
+                    section = ($0 == "[storage_health]")
+                }
+                section && /^enabled=/ {
+                    print $2
+                    exit
+                }
+            ' "$conf"
+        )
+    fi
+
+    if [ "$enabled" = "1" ]; then
+        systemctl enable --now \
+            pve-mods-storage-health.timer || true
+        systemctl start \
+            pve-mods-storage-health.service || true
+    else
+        systemctl disable --now \
+            pve-mods-storage-health.timer \
+            2>/dev/null || true
+    fi
+}
+
 # Build the list of config file pairs to compare on upgrade, one per line as
 # "<default-file>|<user-file>". The main config pair is fixed; per-module pairs
 # are auto-discovered from the reference copies under conf.d so adding a module
@@ -85,6 +119,8 @@ case "$1" in
         if ! /usr/lib/pve-mods/apply-patches.sh; then
             echo "pve-mods: WARNING: Some patches failed to apply. Run 'pve-mods-configure' to retry." >&2
         fi
+
+        _sync_storage_health_timer
 
         if [ -z "$2" ]; then
             echo ""
