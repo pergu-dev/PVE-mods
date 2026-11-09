@@ -252,6 +252,55 @@ Ext.define('PVE.node.StatusView', {
             valueField: 'wait',
         },
         {
+            itemId: 'storageHealth',
+            colspan: 2,
+            printBar: false,
+            title: gettext('Volumes and drives'),
+            iconCls: 'fa fa-fw fa-database',
+            textField: 'PveMods_storageHealth',
+            renderer: function(health) {
+                try {
+                    // Hidden when the feature is disabled or no data exists yet.
+                    if (!health || health.disabled === true || !health.severity) {
+                        this.hide();
+                        return '';
+                    }
+                } catch (e) {
+                    return '';
+                }
+                this.show();
+
+                const levels = {
+                    ok: { icon: 'fa-check-circle', color: '#3c9a3c' },
+                    warning: { icon: 'fa-exclamation-triangle', color: '#FFC300' },
+                    critical: { icon: 'fa-times-circle', color: 'red' },
+                };
+                const level = levels[health.severity] || levels.warning;
+
+                const issues = Array.isArray(health.issues) ? health.issues : [];
+                const issueCount = Number(health.issue_count) || issues.length;
+                const message = Ext.htmlEncode(health.message || (health.severity === 'ok' ? 'OK' : 'Storage health unavailable'));
+
+                // Show the highest-ranked issue, and how many others exist.
+                let text = message;
+                if (health.severity !== 'ok' && issueCount > 1) {
+                    text += `&nbsp;<span style="opacity: 0.7;">(+${issueCount - 1} more)</span>`;
+                }
+
+                // Hover text lists every issue.
+                const tooltip = issues.length > 0
+                    ? Ext.htmlEncode(issues.map(issue => issue.message).join('\n'))
+                    : '';
+
+                const weight = health.severity === 'ok' ? '' : 'font-weight: bold;';
+
+                return `<div style="padding-left: 20px; box-sizing: border-box;" title="${tooltip}">`
+                    + `<i class="fa fa-fw ${level.icon}" style="color: ${level.color};"></i>&nbsp;`
+                    + `<span style="${weight}">${text}</span>`
+                    + '</div>';
+            },
+        },
+        {
             itemId: 'thermalCpu',
             colspan: 2,
             printBar: false,
