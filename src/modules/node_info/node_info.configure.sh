@@ -680,6 +680,24 @@ node_info_configure() {
     esac
     #endregion UPS
 
+    #region Storage health
+    section "Storage Health"
+    local choiceStorage
+    choiceStorage=$(ask "Enable storage health information? (y/N)")
+    case "$choiceStorage" in
+        [yY])
+            if _check_or_install_tool smartctl smartmontools "smartmontools (smartctl)" \
+                "smartctl is not installed; storage health needs it to read drive SMART data."; then
+                ENABLE_STORAGE_HEALTH=1
+                info "Storage health will be collected by the root-run pve-mods-storage-health service."
+            else
+                warn "Storage health information will be disabled."
+            fi
+        ;;
+        *) info "Storage health information disabled." ;;
+    esac
+    #endregion Storage health
+
     #region System info
     section "System Information"
     echo "  type 1) System information (manufacturer, product, serial)"
