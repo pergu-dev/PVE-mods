@@ -223,23 +223,14 @@ sub get_ups_info {
 }
 
 sub get_storage_health {
-    debug(
-        __LINE__,
-        "get_storage_health called",
-    );
+    debug(__LINE__, "get_storage_health called");
 
     if (!$config{storage_health}{enabled}) {
-        debug(
-            __LINE__,
-            "Storage health collection is disabled",
-        );
-
-        return {
-            disabled => \1,
-        };
+        debug(__LINE__, "Storage health collection is disabled");
+        return { disabled => \1 };
     }
 
-    return _read_state_file_cached(
+    my $data = _read_state_file_cached(
         $storage_health_state_file,
         $storage_health_cache,
         0,
@@ -251,6 +242,45 @@ sub get_storage_health {
             drives      => [],
         },
     );
+
+    return $data unless ref($data) eq 'HASH' && defined $data->{generated_at};
+
+    # The collector refreshes this file every few seconds. If it stops, the
+    # last result must not keep showing as healthy.
+    my $interval = ($config{storage_health}{zfs_interval} // 15) + 0;
+    my $max_age  = $interval * 4;
+    $max_age = 120 if $max_age < 120;
+
+    my $age = time() - $data->{generated_at};
+    return $data if $age <= $max_age;
+
+    my $message = sprintf(
+        'Storage health data is stale (last updated %d min ago)',
+        int($age / 60),
+    );
+    my $note = {
+        severity => 'warning',
+        rank     => 20,
+        source   => 'collector',
+        message  => $message,
+        details  => { age_seconds => $age + 0 },
+    };
+
+    # Copy, so the module-level cache is never modified.
+    my %stale     = %$data;
+    my $original  = ref($data->{issues}) eq 'ARRAY' ? $data->{issues} : [];
+    my $critical  = ($data->{severity} // '') eq 'critical';
+    my @issues    = $critical ? (@$original, $note) : ($note, @$original);
+
+    $stale{stale}       = \1;
+    $stale{issues}      = \@issues;
+    $stale{issue_count} = scalar @issues;
+    unless ($critical) {
+        $stale{severity} = 'warning';
+        $stale{message}  = $message;
+    }
+
+    return \%stale;
 }
 
 sub get_pve_mods_version {
