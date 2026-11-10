@@ -26,6 +26,16 @@ _sync_storage_health_timer() {
         )
     fi
 
+    # Collect only while the node_info module itself is enabled.
+    local node_info_on
+    node_info_on=$(
+        awk -F= '
+            /^\[/ { section = ($0 == "[modules]") }
+            section && $1 == "node_info" { print $2; exit }
+        ' "${CONF_DIR}/pve-mods.conf" 2>/dev/null
+    ) || node_info_on=""
+    [ "$node_info_on" = "1" ] || enabled=0
+
     if [ "$enabled" = "1" ]; then
         systemctl enable --now \
             pve-mods-storage-health.timer || true

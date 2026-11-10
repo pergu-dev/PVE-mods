@@ -793,14 +793,21 @@ EOF
     if command -v systemctl >/dev/null 2>&1; then
         systemctl daemon-reload || true
 
-        if [[ "$ENABLE_STORAGE_HEALTH" -eq 1 ]]; then
-            systemctl enable --now                 pve-mods-storage-health.timer || true
+        # Collect only while the node_info module itself is enabled.
+        if [[ "$ENABLE_STORAGE_HEALTH" -eq 1 && "${MOD_NODE_INFO:-0}" -eq 1 ]]; then
+            systemctl enable --now \
+                pve-mods-storage-health.timer || true
 
-            systemctl start                 pve-mods-storage-health.service || true
+            systemctl start \
+                pve-mods-storage-health.service || true
         else
-            systemctl disable --now                 pve-mods-storage-health.timer                 2>/dev/null || true
+            systemctl disable --now \
+                pve-mods-storage-health.timer \
+                2>/dev/null || true
 
-            systemctl stop                 pve-mods-storage-health.service                 2>/dev/null || true
+            systemctl stop \
+                pve-mods-storage-health.service \
+                2>/dev/null || true
         fi
     fi
 }

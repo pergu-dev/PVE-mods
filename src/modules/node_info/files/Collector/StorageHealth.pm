@@ -225,8 +225,21 @@ sub collect_storage_health_once {
     $cache = { version => 1, devices => {} } unless ref($cache) eq 'HASH';
     $cache->{devices} = {} unless ref($cache->{devices}) eq 'HASH';
 
-    my $zpool = _run_command('/usr/sbin/zpool', 'status', '-gLP');
-    my $zfs = parse_zpool_status($zpool->{output});
+    # Nodes without ZFS have no pools to report; that is healthy, not an error.
+    my $zfs;
+    if (-x '/usr/sbin/zpool') {
+        my $zpool = _run_command('/usr/sbin/zpool', 'status', '-gLP');
+        $zfs = parse_zpool_status($zpool->{output});
+    } else {
+        $zfs = {
+            ok          => 1,
+            severity    => 'ok',
+            issue_count => 0,
+            message     => 'OK',
+            issues      => [],
+            details     => { pools => [] },
+        };
+    }
     my ($smart_results, $drives) = _collect_smart($now, $cache);
     my $aggregate = aggregate_health($zfs, @$smart_results);
 

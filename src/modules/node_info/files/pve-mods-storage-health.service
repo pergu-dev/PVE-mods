@@ -2,7 +2,6 @@
 Description=PVE Mods storage health collector
 After=local-fs.target
 ConditionPathExists=/usr/sbin/smartctl
-ConditionPathExists=/usr/sbin/zpool
 
 [Service]
 Type=oneshot
