@@ -111,6 +111,77 @@ Polls `upsc` for a configured NUT device and exposes all key-value pairs returne
 
 Configuration: `device_name=ups@localhost`
 
+### Storage Health (SMART and ZFS)
+
+Combines drive SMART data with ZFS pool and leaf-device error counters and displays the highest-ranked result in the node Summary view. The hover text lists every current issue. ATA, SAS/SCSI, and NVMe devices are supported. The row is hidden when Storage Health is disabled.
+
+Storage Health is disabled by default. Enable it through `pve-mods-configure`, or configure `/etc/pve-mods/conf.d/node_info.conf` directly:
+
+```ini
+[storage_health]
+enabled=0
+zfs_interval=15
+smart_interval=3600
+smart_stale_after=86400
+wake_for_initial_baseline=1
+wake_for_periodic_check=0
+```
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `enabled` | `0` | Enables collection, the systemd timer, API data, and the Summary row. |
+| `zfs_interval` | `15` | Expected normalized-state refresh interval in seconds, used by stale-state detection. The packaged systemd timer also defaults to 15 seconds. SMART data is governed separately by `smart_interval`. |
+| `smart_interval` | `3600` | Minimum seconds between normal SMART queries for a drive. Cached results are reused between queries. |
+| `smart_stale_after` | `86400` | Seconds after which cached SMART data is considered stale. |
+| `wake_for_initial_baseline` | `1` | Allows the first SMART baseline to wake an ATA drive when no cached result exists. |
+| `wake_for_periodic_check` | `0` | When `0`, periodic ATA checks use `smartctl -n standby` and do not wake a sleeping drive. |
+
+#### Drive wake policy
+
+With the defaults, the initial baseline may wake ATA disks once. Periodic checks use `smartctl -n standby`; if an ATA disk is sleeping, it remains asleep and the last cached health result stays available. SAS/SCSI and NVMe devices are queried normally because ATA standby detection does not apply to them.
+
+Collection states shown in the normalized data:
+
+| State | Meaning |
+|-------|---------|
+| `queried` | SMART was queried during this service run. |
+| `cached` | A successful cached SMART result is still within `smart_interval`. |
+| `sleeping` | An ATA disk was in standby and was intentionally not awakened. |
+| `query_failed` | SMART did not return usable data and no usable cached result was available. |
+
+#### Severity and stale data
+
+| Severity | Typical meaning |
+|----------|-----------------|
+| `ok` | No actionable SMART or ZFS findings. |
+| `warning` | Nonzero ZFS device counters, SAS/SCSI uncorrected errors, unavailable data, or stale normalized state. |
+| `critical` | A highest-severity SMART or ZFS finding, such as failed SMART health or a faulted pool. |
+
+The Summary row shows the highest-ranked message and appends `(+N more)` when other issues exist. Hover over the result to see every issue. If the root collector stops updating, data older than four times `zfs_interval`, with a 120-second minimum, is marked stale instead of continuing to show a false healthy result. An existing critical result remains critical when stale.
+
+ZFS is optional. On a Proxmox node without `/usr/sbin/zpool`, Storage Health continues to monitor SMART and treats the absence of ZFS pools as normal.
+
+#### Security model
+
+SMART requires privileged block-device access. Storage Health therefore does **not** grant the network-facing `www-data` account access to disks and does not run SMART inside `pveproxy`. A hardened root-owned `Type=oneshot` service performs collection on a systemd timer, writes the results, and exits. The unit has no network access and uses systemd filesystem, kernel, namespace, and privilege restrictions where compatible with real block-device access.
+
+- Raw SMART cache: `/var/lib/pve-mods/storage-health-smart.json` (`root:root`, mode `0600`)
+- Normalized API state: `/run/pve-mods/storage-health.json` (`root:www-data`, mode `0640`)
+- Collector: `pve-mods-storage-health.service`
+- Schedule: `pve-mods-storage-health.timer`
+
+Only the normalized state is readable by the API. Raw SMART JSON remains root-only. `PrivateDevices=true` cannot be used because `smartctl` must access the host's real block devices; the service is instead short-lived, non-networked, and accepts no requests or user-supplied commands.
+
+Useful operational checks:
+
+```sh
+systemctl status pve-mods-storage-health.timer pve-mods-storage-health.service
+journalctl -u pve-mods-storage-health.service --no-pager
+python3 -m json.tool /run/pve-mods/storage-health.json
+```
+
+**Configurator note:** selecting `Node Info [enabled]` in `pve-mods-configure` removes the module; selecting it again re-enables the module and runs the complete Node Info questionnaire. Removing Node Info also disables the Storage Health timer.
+
 ### System Information
 
 Reads hardware identity from `dmidecode` (cached at configure time, no runtime root required).
@@ -130,6 +201,7 @@ Each feature requires the corresponding tool to be installed on the Proxmox host
 | NVIDIA GPU | `nvidia-smi` |
 | Intel GPU | `intel-gpu-tools` (`intel_gpu_top` binary) |
 | UPS | `nut-client` (`upsc` binary) |
+| Storage health | `smartmontools` (`smartctl` binary); ZFS tools are optional |
 | System information | `dmidecode` (run once via `pve-mods-configure`) |
 
 ## Debug Mode
