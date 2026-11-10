@@ -228,7 +228,7 @@ sub collect_storage_health_once {
     # Nodes without ZFS have no pools to report; that is healthy, not an error.
     my $zfs;
     if (-x '/usr/sbin/zpool') {
-        my $zpool = _run_command('/usr/sbin/zpool', 'status', '-gLP');
+        my $zpool = _run_command('/usr/sbin/zpool', 'status', '-LP');
         $zfs = parse_zpool_status($zpool->{output});
     } else {
         $zfs = {
